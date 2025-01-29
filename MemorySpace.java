@@ -57,8 +57,27 @@ public class MemorySpace {
 	 *        the length (in words) of the memory block that has to be allocated
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
-	public int malloc(int length) {		
-		//// Replace the following statement with your code
+	public int malloc(int length) {	
+		Node node = freeList.getNode(0);
+		MemoryBlock freeBlock;
+		while (node != null){
+			freeBlock = node.block;
+			if (freeBlock.length > length) {
+				MemoryBlock newBlock = new MemoryBlock(freeBlock.baseAddress, length);
+				allocatedList.addLast(newBlock);
+				freeBlock.length -= length;
+				freeBlock.baseAddress += length;
+				return newBlock.baseAddress;
+			}
+			if (freeBlock.length == length) {
+				allocatedList.addLast(freeBlock);
+				freeList.remove(freeBlock);
+				return freeBlock.baseAddress;
+				
+			}
+			node = node.next;
+		}
+
 		return -1;
 	}
 
@@ -71,7 +90,26 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		//// Write your code here
+		MemoryBlock allocatedBlock;
+		// Start at first node in allocated list
+		Node node = allocatedList.getNode(0);
+		if (allocatedList== null) {
+			throw new IllegalArgumentException("index must be between 0 and size");	
+		}
+		if (allocatedList.getSize() == 0) {
+			throw new IllegalArgumentException("index must be between 0 and size");		
+		}
+		// Search through allocated list for block with matching address
+		while (node != null) {
+		    allocatedBlock = node.block;
+			if (allocatedBlock.baseAddress == address) {
+				// Move block from allocated list to free list
+				freeList.addLast(allocatedBlock);
+				allocatedList.remove(allocatedBlock);
+				return;
+			}
+			node = node.next;
+		}
 	}
 	
 	/**
@@ -87,8 +125,32 @@ public class MemorySpace {
 	 * Normally, called by malloc, when it fails to find a memory block of the requested size.
 	 * In this implementation Malloc does not call defrag.
 	 */
+	
 	public void defrag() {
-		/// TODO: Implement defrag test
-		//// Write your code here
+		LinkedList remove = new LinkedList();
+		ListIterator it = freeList.iterator();
+		while(it.hasNext()){
+			MemoryBlock curr = it.next();
+			boolean flag = true;
+			while(flag){
+				flag = false;
+				ListIterator it2 = freeList.iterator();
+				while(it2.hasNext()){
+					MemoryBlock next = it2.next();
+					if(curr.baseAddress + curr.length == next.baseAddress){
+						if (remove.indexOf(next) == -1){
+							remove.addLast(next);
+						}
+						curr.length = curr.length + next.length;
+						flag = true;
+						break;
+					}
+				}
+			}
+		}
+		it = remove.iterator();
+		while(it.hasNext()) {
+			freeList.remove(it.next());
+		}
 	}
 }
